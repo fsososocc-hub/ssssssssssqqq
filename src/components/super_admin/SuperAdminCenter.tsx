@@ -32,6 +32,7 @@ import PlatformKnowledgeCenter from './ai-brain-center/PlatformKnowledgeCenter';
 import PlatformWorkflowCenter from './ai-brain-center/PlatformWorkflowCenter';
 import P1IntelligenceControlCenter from './ai-brain-center/P1IntelligenceControlCenter';
 import PlatformTuningConsole from './ai-brain-center/PlatformTuningConsole';
+import CentralAIOperatorTerminal from './ai-brain-center/CentralAIOperatorTerminal';
 
 interface SuperAdminCenterProps {
   activeSubTab?: 'stats' | 'tenants' | 'packages' | 'finance' | 'gateways' | 'communications' | 'ai-ops' | 'marketplace' | 'developer' | 'roles' | 'logs' | 'settings' | 'query' | 'diagnostics' | 'sectors';
@@ -2671,6 +2672,13 @@ export default function SuperAdminCenter({
       {/* ========================================================= */}
       {activeSubTab === 'ai-ops' && (
         <div className="space-y-6 text-left">
+          
+          {/* Central AI Operator Terminal */}
+          <CentralAIOperatorTerminal 
+            tenantDB={tenantDB}
+            setTenantDB={setTenantDB}
+            onAddSystemLog={onAddSystemLog}
+          />
           
           {/* AI Central Inner Tabs Selector */}
           <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3 mb-4">

@@ -24,7 +24,7 @@ import { aiCommerceOS } from "./src/ai-commerce-os";
 
 // Core Commerce imports
 import { CoreCommerce, StoreConfig, EventBus, StoreEngine, CommerceEngine } from "./src/core-commerce";
-import { initializeDatabase, getProducts, insertProduct, getOrders, insertOrder, getCustomers, insertCustomer } from "./src/database/db";
+import { initializeDatabase, getProducts, insertProduct, updateProductInDb, deleteProductInDb, getOrders, insertOrder, getCustomers, insertCustomer } from "./src/database/db";
 import { getDatabaseConfig, logDatabaseConfig } from "./src/database/config";
 import commerceRouter from './backend/commerce-routes';
 
@@ -1442,6 +1442,24 @@ app.post('/api/commerce/products', async (req: any, res) => {
   }
 });
 
+// Update product
+app.put('/api/commerce/products/:id', async (req: any, res) => {
+  try {
+    const { id } = req.params;
+    const storeId = req.headers['x-store-id'] || 'store_default';
+    const tenantId = req.headers['x-tenant-id'] || 'tenant_default';
+    
+    const updated = await updateProductInDb(id, storeId, tenantId, req.body);
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'Product not found' });
+    }
+    
+    res.json({ success: true, data: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
 // Get products
 app.get('/api/commerce/products', async (req: any, res) => {
   try {
@@ -1457,6 +1475,28 @@ app.get('/api/commerce/products', async (req: any, res) => {
     // Fallback to in-memory
     const products = CoreCommerce.commerce.getProducts(storeId, tenantId);
     res.json({ success: true, data: products });
+  } catch (err) {
+    res.status(500).json({ success: false, error: String(err) });
+  }
+});
+
+// Delete product
+app.delete('/api/commerce/products/:id', async (req: any, res) => {
+  try {
+    const { id } = req.params;
+    const storeId = req.headers['x-store-id'] || 'store_default';
+    const tenantId = req.headers['x-tenant-id'] || 'tenant_default';
+    
+    // Remove from in-memory CoreCommerce engine
+    CoreCommerce.commerce.deleteProduct(storeId, tenantId, id);
+    
+    // Remove from database
+    const deleted = await deleteProductInDb(id, storeId, tenantId);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: 'Product not found in database' });
+    }
+    
+    res.json({ success: true, message: 'Product successfully deleted' });
   } catch (err) {
     res.status(500).json({ success: false, error: String(err) });
   }
@@ -2878,7 +2918,10 @@ app.post("/api/ai/admin-chat", async (req, res) => {
     return res.json({
       summary: result.summary,
       suggestions: result.suggestions,
-      metrics: result.metrics || null
+      metrics: result.metrics || null,
+      thought: result.thought || null,
+      actionType: result.actionType || null,
+      actionMeta: result.actionMeta || null
     });
   } catch (err: any) {
     console.error("AI Admin central brain failed:", err);
